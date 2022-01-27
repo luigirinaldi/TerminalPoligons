@@ -52,7 +52,7 @@ void print_triangle(Triangle t){
 	const int OFFSET = 5;
 	// point for vertex (254), full length horizontal bar (196), full length vertical bar |, 
 	// back slash, forward slash
-	const char SYMBOLS[10] = {'*','\\','/','|','-',' '}; //,char(196),'|',char(92),char(47)};
+	const char SYMBOLS[] = {'*','\\','/','|','-',' '}; 
 	// create new triangle by type casting original one
 	Triangle t_draw;
 	for(int i = 0; i < 3;i++){
@@ -126,10 +126,10 @@ void print_triangle(Triangle t){
 		coeffs[i][3] = dx;
 		coeffs[i][4] = dy;
 		
-		std::cout << i << " " << P1 << " " << P2 << coeffs[i][0] << " " << coeffs[i][1] << " " << coeffs[i][2] << std::endl;
+		// std::cout << i << " " << P1 << " " << P2 << coeffs[i][0] << " " << coeffs[i][1] << " " << coeffs[i][2] << std::endl;
 	}
 
-	std::cout << min_x << max_x << min_y << max_y << std::endl;
+	//std::cout << min_x << max_x << min_y << max_y << std::endl;
 
 	// define the boundries of the box to draw, adding extra padding on the sides
 	// to get x and y coords add min - offset
@@ -138,7 +138,7 @@ void print_triangle(Triangle t){
 	int i_max = ((max_y - min_y) + 2 * OFFSET);
 	int j_max = 2*((max_x - min_x) + 2 * OFFSET);
 
-	std::cout << i_max << " " << j_max << std::endl;
+	//std::cout << i_max << " " << j_max << std::endl;
 
 	// matrix of points with true values for points to be printed
 	char draw_points[i_max][j_max];
@@ -156,9 +156,8 @@ void print_triangle(Triangle t){
 				for(int k = 0; (k < 3) && !found ;k++){
 					found = p == t_draw.vertices[k];
 				}
-
-				if(found) {draw_points[i][j] = SYMBOLS[0];}
-				//else {draw_points[i][j] = 0;}
+				// if the point is a vertex
+				if(found) {draw_points[i][j] = '*';}
 				else {
 					bool line = false;
 					double val = 0;
@@ -170,21 +169,23 @@ void print_triangle(Triangle t){
 						if(line){
 							if(coeffs[k][3] == 0){
 								// dx is 0, print vertical line
-								draw_points[i][j] = SYMBOLS[3];
+								draw_points[i][j] = '|';
 							} else if(coeffs[k][4] == 0){
 								// dy is 0, print horizontal 
-								draw_points[i][j] = SYMBOLS[4];
+								draw_points[i][j] = '-';
 							} else if((coeffs[k][4]/coeffs[k][3]) > 0){
 								// print forward slash
-								draw_points[i][j] = SYMBOLS[2];
+								draw_points[i][j] = '/';
 							} else {
-								draw_points[i][j] = SYMBOLS[0];
+								draw_points[i][j] = '\\';
 							}
+						} else {
+							draw_points[i][j] = ' ';
 						}
 					}
 				}
 			} else {
-				draw_points[i][j] = SYMBOLS[5];
+				draw_points[i][j] = ' ';
 			}
 			//std::cout << p << " " << val << std::endl;
 		}
@@ -197,7 +198,8 @@ void print_triangle(Triangle t){
 		}
 		std::cout << "\n";
 	}
-*/
+	*/
+
 	// draw box with vertices inside
 	// using box drawing characters: https://en.wikipedia.org/wiki/Box-drawing_character
 	// had to use ascii https://theasciicode.com.ar/extended-ascii-code/box-drawing-character-single-line-lower-left-corner-ascii-code-192.html
