@@ -5,7 +5,7 @@
 #include <fstream>
 #include <cstdlib>
 
-const char SYMBOLS[] = {'*','\\','/','|','-',' '}; 
+const char SYMBOLS[] = {'*','\\','/','|','_',' '}; 
 
 struct Point{
 	double x;
@@ -110,14 +110,26 @@ struct Line{
 
 			double y = p0.y;
 			double slope = dy/dx;
+
 			std::cout << slope << std::endl;
 			Point new_p;
+
+			char new_char;
+			int change_y;
 			for(double x = p0.x; x <= p1.x; x += deltaX){
+				if(x != p0.x){
+					change_y = int(y) - int(new_p.y);
+					if(slope == 0){new_char = SYMBOLS[4];}
+					else if(slope < 0){new_char = SYMBOLS[1];}
+					else {new_char = SYMBOLS[2];}
+				}
 				new_p.x = x;
 				new_p.y = y;
-				canvas.drawP(new_p);
+				std::cout << new_p << " ";
+				canvas.drawP(new_p,new_char);
 				y = y + slope * deltaX;
 			}
+			std::cout << std::endl;
 		} else {
 			// Line is more vertical than horizontal
 			// if P0 > P1 swap them
@@ -128,15 +140,28 @@ struct Line{
 			}
 
 			double x = p0.x;
-			double slope = (dx/dy)*2;
+			double slope = (dx/dy);
 
+			
+			std::cout << slope << std::endl;
 			Point new_p;
-			for(double y = p0.y; y <= p1.y; y++){
+
+			int change_x;
+			char new_char;
+			for(double y = p0.y; y <= p1.y; y+= 1){
+				if(x != p0.x){
+					change_x = int(x) - int(new_p.x);
+					if(slope == 0){new_char = SYMBOLS[3];}
+					else if(slope < 0){new_char = SYMBOLS[1];}
+					else {new_char = SYMBOLS[2];}
+				}
 				new_p.x = x;
-				new_p.y = y;
-				canvas.drawP(new_p);
-				x = slope + y;
+				new_p.y = y;				
+				std::cout << new_p << " ";
+				canvas.drawP(new_p, new_char);
+				x = slope + x;
 			}
+			std::cout << std::endl;
 		}
 	}
 };
@@ -149,20 +174,20 @@ struct Triangle{
 
 // Overload ostream operator to print Triangle
 std::ostream& operator<<(std::ostream& os, const Triangle& t) { 
-		for (int i = 0; i < t.vertices.size(); i++){
-			os << "V" << i << ": " << t.vertices[i] << (i == 2 ? "" : "\n");
-		}
-		return os;
+	for (int i = 0; i < t.vertices.size(); i++){
+		os << "V" << i << ": " << t.vertices[i] << (i == 2 ? "" : "\n");
+	}
+	return os;
 }
 
 double distance_points(Point p1, Point p2){
-    return std::sqrt(std::pow((p1.x - p2.x), 2) + std::pow((p1.y - p2.y), 2));
+	return std::sqrt(std::pow((p1.x - p2.x), 2) + std::pow((p1.y - p2.y), 2));
 }
 
 double triangle_perimeter(Triangle t){
 	double perimeter = 0;
 	for (int i = 0; i < t.vertices.size(); i++){
-			perimeter += i == 2 ? distance_points(t.vertices[i], t.vertices[0]) : distance_points(t.vertices[i], t.vertices[i+1]);
+		perimeter += i == 2 ? distance_points(t.vertices[i], t.vertices[0]) : distance_points(t.vertices[i], t.vertices[i+1]);
 	}
 	return perimeter;
 }
@@ -174,8 +199,8 @@ int main(){
 	infile.open("triangle.txt");
 
 	if(!infile.is_open()){
-			std::cout << "error opening file" << std::endl;
-			return EXIT_FAILURE;
+		std::cout << "error opening file" << std::endl;
+		return EXIT_FAILURE;
 	}
 
 	Triangle triangle;
@@ -190,8 +215,10 @@ int main(){
 	}
 	std::cout << triangle << std::endl;
 
+	// Make canvas with size 20 and corner and -10, 10
 	Canvas c = Canvas(20, 20, Point(-10, 10));
 
+	// make triangle lines and add them to canvas
 	for(int i = 0; i < 3; i++){
 		Point P1 = triangle.vertices[i];
 		Point P2 = triangle.vertices[i == 2 ? 0 : i+1];
@@ -200,14 +227,15 @@ int main(){
 		Line l = Line(P1,P2);
 		l.draw(c);
 	}
-
+/*
 	for(int i = 0; i < 3; i++){
 		c.drawP(triangle.vertices[i],'$');
 	}
-
+*/
 	//c.drawP(P0,'$');
 	//c.drawP(P1,'$');
 
+	// print canvas
 	c.print();
  
 }
