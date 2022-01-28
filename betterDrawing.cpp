@@ -89,6 +89,18 @@ struct Line{
 		P1 = Point(0,1);
 	}
 
+	char getSlopeChar(Point p1, Point p2){
+		p1.x = int(p1.x);
+		p1.y = int(p1.y);
+		p2.x = int(p2.x);
+		p2.y = int(p2.y);
+		if(p1.x == p2.x) return '|';
+		if(p1.y == p2.y) return '-';
+		double slope = (p1.y - p2.y)/(p1.x - p2.y);
+		if(slope > 0) return '/';
+		else return '\\'; 
+	}
+
 	// function draws crude line on canvas
 	void draw(Canvas& canvas){
 		// how much the x changes as the calculations are made, 0.5 since for every y there are 2 x
@@ -111,23 +123,15 @@ struct Line{
 			double y = p0.y;
 			double slope = dy/dx;
 
-			std::cout << slope << std::endl;
-			Point new_p;
+			Point curr_p;
+			Point next_p;
 
-			char new_char;
-			int change_y;
 			for(double x = p0.x; x <= p1.x; x += deltaX){
-				if(x != p0.x){
-					change_y = int(y) - int(new_p.y);
-					if(slope == 0){new_char = SYMBOLS[4];}
-					else if(slope < 0){new_char = SYMBOLS[1];}
-					else {new_char = SYMBOLS[2];}
-				}
-				new_p.x = x;
-				new_p.y = y;
-				std::cout << new_p << " ";
-				canvas.drawP(new_p,new_char);
+				curr_p = Point(x,y);
 				y = y + slope * deltaX;
+				next_p = Point(x + deltaX,y);
+
+				canvas.drawP(curr_p,getSlopeChar(curr_p,next_p));
 			}
 			std::cout << std::endl;
 		} else {
