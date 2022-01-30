@@ -4,6 +4,7 @@
 #include <cmath>
 #include <string>
 #include <vector>
+#include <array>
 #include <fstream>
 #include <cstdlib>
 #include <chrono>
@@ -37,12 +38,27 @@ std::ostream& operator<<(std::ostream& os, const Point& p) {
 	return os;
 }
 
+// not great how it's structured
+struct CanvasPoint{
+	char symbol;
+	std::array<uint8_t, 3> colour;
+
+	CanvasPoint(){
+		symbol = 0;
+	}
+
+	CanvasPoint(char s, std::array<uint8_t, 3> c){
+		symbol = s;
+		colour = c;
+	}
+};
+
 struct Canvas{
 	int width;
 	int height;
 	Point corner;
 	// pointer to two dimensional arrays
-	std::vector<std::vector<char>> canvas;
+	std::vector<std::vector<CanvasPoint>> canvas;
 	
 	Canvas(const int& w, const int& h, const Point c){
 		// Width is twice the height to account for spacing in console
@@ -53,27 +69,29 @@ struct Canvas{
 
 		//std::cout << "Initializing canvas with: " << height << " " << width << corner << std::endl;
 		
-		std::vector<char> tmp_arr;
+		std::vector<CanvasPoint> tmp_arr;
 		for(int y = 0; y <= height; y++){
 			for(int x = 0; x <= width; x++){
-				tmp_arr.push_back(char(0));
+				tmp_arr.push_back(CanvasPoint());
 			}
 			canvas.push_back(tmp_arr);
-			tmp_arr = std::vector<char>();
+			tmp_arr = std::vector<CanvasPoint>();
 		}
 
 		printf("\033[?25l"); //hide cursor
 		
 		//clear the screen;
-		printf("\33[2J");
+		printf("\033[2J");
 
-		//print empty characters at the start of line so it's preserved
+		//set 16 bit color mode
+		//printf("\033[=19h");
+
+		//print empty characters on line so it's preserved
 		for(int y = 0; y <= height; y++){
-			// start of row
-			printf("\033[%i;%iH%c",y,0,char(179));
 			// end of row end of line char (carriage return)
-			printf("\033[%i;%iH%c",y,width + 1,char(10));
+			printf("\033[%i;%iH%c",y,width + 1,char(179));
 		}
+		printf("\033[%i;%iH%c",height + 1,width + 1,char(217));
 
 		// Print bottom row, only gets printed once:
 		for(int x = 0; x <= width; x++){
@@ -83,42 +101,53 @@ struct Canvas{
 		}
 	}
 
+	// Not particularly efficient, could be better
 	void clear(){
 		for(int y = 0; y <= height; y++){
-			//position cursor at the start of the line and then erase it
-			printf("\033[%i;%iH",y,1);
-			// ESC[2K	erase from cursor to end of line, so as not to erase the legednd at the bottom
-			printf("\033[0K");
 			for(int x = 0; x <= width; x++){
-				if(canvas[y][x] != char(0)) canvas[y][x] = char(0);	
+				if(canvas[y][x].symbol != 0){
+					//replace with empty space
+					printf("\033[%i;%iH%c",y,x,' ');
+					canvas[y][x].symbol = 0;	
+				}
 			}
 		}
 	}
 
-	void drawP(Point p, char symbol = '*'){
+	void drawP(Point p, CanvasPoint cp){
 		
 		// Width is twice the height to account for spacing in console
 		int i = round(corner.y - p.y);
 		int j = round(2 * (p.x - corner.x));
-		canvas[i][j] = symbol;
+		canvas[i][j] = cp;
 
 		//std::cout << p << " " << i ;
 	}
 
-
 	// posistion cursor on coordinate and print only non blank chars
 	void print(){
-
 		for(int y = 0; y <= height; y++){
 			for(int x = 0; x <= width; x++){
-				if(canvas[y][x] != char(0)){
+				if(canvas[y][x].symbol != 0){
 					// ESC[y;xH moves curser to row y, col x, where ESC is \033
-					printf("\033[%i;%iH%c",y,x,canvas[y][x]);
+					printf("\033[%i;%iH",y,x);
+					// set color mode
+					//printf("\033[38;5;%im",x + y);
+					printf("\033[38;2;%i;%i;%im",int(canvas[y][x].colour[0]), int(canvas[y][x].colour[1]), int(canvas[y][x].colour[2]));
+					putchar(canvas[y][x].symbol);
 				}
 			}
 		}
 
 		
+	}
+
+	void close(){
+		printf("\033[0m");
+		//show cursor 
+		printf("\033[?25h");
+		//Move cursor at the end of the picture
+		printf("\033[%i;%iH",height + 3,0);
 	}
 };
 
@@ -137,7 +166,7 @@ struct Line{
 	}
 
 	// function draws crude line on canvas
-	void draw(Canvas& canvas){
+	void draw(Canvas& canvas, std::array<uint8_t, 3> colour){
 		// how much the x changes as the calculations are made, 0.5 since for every y there are 2 x
 		const double deltaX = 0.5;
 		// Temp point variables in case they need to be swapped
@@ -183,13 +212,13 @@ struct Line{
           ██▀				
 			*/
 				if(int(round(next_y)) == int(round(y))){
-					canvas.drawP(curr_p,char(219)); //█
+					canvas.drawP(curr_p,CanvasPoint(char(219),colour)); //█
 				} else if(round(next_y) > round(y)){
-					canvas.drawP(curr_p,char(223)); //▀
-					canvas.drawP(Point(x,next_y), char(220)); //▄
+					canvas.drawP(curr_p,CanvasPoint(char(223),colour)); //▀
+					canvas.drawP(Point(x,next_y), CanvasPoint(char(220),colour)); //▄
 				} else {
-					canvas.drawP(curr_p,char(220)); //▄
-					canvas.drawP(Point(x,next_y), char(223)); //▀
+					canvas.drawP(curr_p,CanvasPoint(char(220),colour)); //▄
+					canvas.drawP(Point(x,next_y), CanvasPoint(char(223),colour)); //▀
 				}
 				y = next_y;
 			}
@@ -207,7 +236,8 @@ struct Line{
 			Point curr_p;
 			for(double y = p0.y; y <= p1.y; y+= 1){
 				curr_p = Point(x,y);
-				canvas.drawP(curr_p,char(219)); //█
+				x = x + slope;
+				canvas.drawP(curr_p,CanvasPoint(char(219),colour)); //█
 			}
 		}
 	}
@@ -217,6 +247,20 @@ struct Line{
 struct Triangle{
 	// initialize vector of size 3
 	std::vector<Point> vertices = std::vector<Point>(3);
+
+	void draw(Canvas& c, std::array<uint8_t, 3> colour){
+		for(int i = 0; i < 3; i++){
+			Point P1 = vertices[i];
+			Point P2 = vertices[i == 2 ? 0 : i+1];
+
+			//std::cout << P1 << P2 << std::endl;
+			Line l = Line(P1,P2);
+			l.draw(c, colour);
+		}
+		for(int i = 0; i < 3; i++){
+			c.drawP(vertices[i],CanvasPoint('@',colour));
+		}
+	}
 };
 
 // Overload ostream operator to print Triangle
@@ -251,7 +295,11 @@ int main(){
 	}
 
 	Triangle triangle;
+	std::array<uint8_t, 3> t_colour {255,0,0};
 	int point_counter = 0;
+	bool read_colour;
+
+	//infile >> t_colour[0] >> t_colour[1] >> t_colour[2];
 
 	while(infile >> triangle.vertices[point_counter].x >> triangle.vertices[point_counter].y){
 		point_counter++;
@@ -263,40 +311,20 @@ int main(){
 	std::cout << triangle << std::endl;
 
 	// Make canvas with size 20 and corner and -10, 10
-	Canvas c = Canvas(20, 20, Point(-10, 10));
+	Canvas c = Canvas(50, 50, Point(-25, 25));
 
 
-/*
-	// make triangle lines and add them to canvas
-	for(int i = 0; i < 3; i++){
-		Point P1 = triangle.vertices[i];
-		Point P2 = triangle.vertices[i == 2 ? 0 : i+1];
 
-		//std::cout << P1 << P2 << std::endl;
-		Line l = Line(P1,P2);
-		l.draw(c);
-	}
-/*
-	for(int i = 0; i < 3; i++){
-		c.drawP(triangle.vertices[i],'$');
-	}
-*/
-	//c.drawP(P0,'$');
-	//c.drawP(P1,'$');
+	const int DELAY = 200;
 
-	Line l = Line(Point(-7, -6), Point(6, 6));
-	l.draw(c);
-
-	for(int i = 0; i < 10; i++){		
+	for(int i = 0; i < 100; i++){		
 		c.clear();
-		l = Line(Point(-7, -6 + i), Point(6, 6 - i));
-		l.draw(c);
+		t_colour[1] += 20;
+		triangle.draw(c, t_colour);
 		c.print();
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+		std::this_thread::sleep_for(std::chrono::milliseconds(DELAY));
+		
 	}
 
-	// print canvas
-
-
-	printf("\033[?25h"); //show cursor 
+	c.close();
 }
