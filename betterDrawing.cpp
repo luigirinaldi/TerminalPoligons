@@ -71,12 +71,24 @@ struct Canvas{
 		//std::cout << p << " " << i ;
 	}
 
+
+	// posistion cursor on coordinate and print only non blank chars
 	void print(){
+		//clear the screen;
+		printf("\33[2J");
+
 		for(int y = 0; y <= height; y++){
 			for(int x = 0; x <= width; x++){
-				putchar(canvas[y][x]);
+				if(canvas[y][x] != ' '){
+					// ESC[y;xH moves curser to row y, col x, where ESC is \033
+					printf("\033[%i;%iH%c",y,x,canvas[y][x]);
+				}
 			}
-			putchar('\n');
+		}
+
+		for(int x = 0; x <= width; x++){
+			printf("\033[%i;%iH%c",height,x,char(196));
+			if(x % 20 == 0) printf("\033[%i;%iH%i",height+1,x,int(x/2 + corner.x));
 		}
 	}
 };
@@ -225,7 +237,7 @@ int main(){
 	Canvas c = Canvas(50, 50, Point(-25, 25));
 
 
-
+/*
 	// make triangle lines and add them to canvas
 	for(int i = 0; i < 3; i++){
 		Point P1 = triangle.vertices[i];
@@ -243,8 +255,8 @@ int main(){
 	//c.drawP(P0,'$');
 	//c.drawP(P1,'$');
 
-	//Line l = Line(Point(-7, -6), Point(-6, 6));
-	//l.draw(c);
+	Line l = Line(Point(-7, -6), Point(6, 6));
+	l.draw(c);
 
 	// print canvas
 	c.print();
