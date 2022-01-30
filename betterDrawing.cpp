@@ -6,6 +6,8 @@
 #include <vector>
 #include <fstream>
 #include <cstdlib>
+#include <chrono>
+#include <thread>
 
 const char SYMBOLS[] = {'*','\\','/','|','_',' '}; 
 
@@ -54,10 +56,42 @@ struct Canvas{
 		std::vector<char> tmp_arr;
 		for(int y = 0; y <= height; y++){
 			for(int x = 0; x <= width; x++){
-				tmp_arr.push_back(' ');
+				tmp_arr.push_back(char(0));
 			}
 			canvas.push_back(tmp_arr);
 			tmp_arr = std::vector<char>();
+		}
+
+		printf("\033[?25l"); //hide cursor
+		
+		//clear the screen;
+		printf("\33[2J");
+
+		//print empty characters at the start of line so it's preserved
+		for(int y = 0; y <= height; y++){
+			// start of row
+			printf("\033[%i;%iH%c",y,0,char(179));
+			// end of row end of line char (carriage return)
+			printf("\033[%i;%iH%c",y,width + 1,char(10));
+		}
+
+		// Print bottom row, only gets printed once:
+		for(int x = 0; x <= width; x++){
+			// ESC[y;xH moves curser to row y, col x, where ESC is \033
+			printf("\033[%i;%iH%c",height + 1,x,char(196));
+			if(x % 20 == 0) printf("\033[%i;%iH%i",height + 2,x,int(x/2 + corner.x));
+		}
+	}
+
+	void clear(){
+		for(int y = 0; y <= height; y++){
+			//position cursor at the start of the line and then erase it
+			printf("\033[%i;%iH",y,1);
+			// ESC[2K	erase from cursor to end of line, so as not to erase the legednd at the bottom
+			printf("\033[0K");
+			for(int x = 0; x <= width; x++){
+				if(canvas[y][x] != char(0)) canvas[y][x] = char(0);	
+			}
 		}
 	}
 
@@ -74,22 +108,17 @@ struct Canvas{
 
 	// posistion cursor on coordinate and print only non blank chars
 	void print(){
-		//clear the screen;
-		printf("\33[2J");
 
 		for(int y = 0; y <= height; y++){
 			for(int x = 0; x <= width; x++){
-				if(canvas[y][x] != ' '){
+				if(canvas[y][x] != char(0)){
 					// ESC[y;xH moves curser to row y, col x, where ESC is \033
 					printf("\033[%i;%iH%c",y,x,canvas[y][x]);
 				}
 			}
 		}
 
-		for(int x = 0; x <= width; x++){
-			printf("\033[%i;%iH%c",height,x,char(196));
-			if(x % 20 == 0) printf("\033[%i;%iH%i",height+1,x,int(x/2 + corner.x));
-		}
+		
 	}
 };
 
@@ -234,7 +263,7 @@ int main(){
 	std::cout << triangle << std::endl;
 
 	// Make canvas with size 20 and corner and -10, 10
-	Canvas c = Canvas(50, 50, Point(-25, 25));
+	Canvas c = Canvas(20, 20, Point(-10, 10));
 
 
 /*
@@ -258,7 +287,16 @@ int main(){
 	Line l = Line(Point(-7, -6), Point(6, 6));
 	l.draw(c);
 
+	for(int i = 0; i < 10; i++){		
+		c.clear();
+		l = Line(Point(-7, -6 + i), Point(6, 6 - i));
+		l.draw(c);
+		c.print();
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	}
+
 	// print canvas
-	c.print();
- 
+
+
+	printf("\033[?25h"); //show cursor 
 }
