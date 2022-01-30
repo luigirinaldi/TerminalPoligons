@@ -1,3 +1,5 @@
+// character chart that seems to be working https://www.asciitable.com/
+
 #include <iostream>
 #include <cmath>
 #include <string>
@@ -42,6 +44,7 @@ struct Canvas{
 	
 	Canvas(const int& w, const int& h, const Point c){
 		// Width is twice the height to account for spacing in console
+		// Coner is in the top left and acts as a reference for all the points
 		width = 2*w;
 		height = h;
 		corner = c;
@@ -59,18 +62,21 @@ struct Canvas{
 	}
 
 	void drawP(Point p, char symbol = '*'){
+		
 		// Width is twice the height to account for spacing in console
-		int i = int(corner.y - p.y);
-		int j = int(2 * (p.x - corner.x));
+		int i = round(corner.y - p.y);
+		int j = round(2 * (p.x - corner.x));
 		canvas[i][j] = symbol;
+
+		//std::cout << p << " " << i ;
 	}
 
 	void print(){
 		for(int y = 0; y <= height; y++){
 			for(int x = 0; x <= width; x++){
-				std::cout << canvas[y][x];
+				putchar(canvas[y][x]);
 			}
-			std::cout << '\n';
+			putchar('\n');
 		}
 	}
 };
@@ -89,18 +95,6 @@ struct Line{
 		P1 = Point(0,1);
 	}
 
-	char getSlopeChar(Point p1, Point p2){
-		p1.x = int(p1.x);
-		p1.y = int(p1.y);
-		p2.x = int(p2.x);
-		p2.y = int(p2.y);
-		if(p1.x == p2.x) return '|';
-		if(p1.y == p2.y) return '-';
-		double slope = (p1.y - p2.y)/(p1.x - p2.y);
-		if(slope > 0) return '/';
-		else return '\\'; 
-	}
-
 	// function draws crude line on canvas
 	void draw(Canvas& canvas){
 		// how much the x changes as the calculations are made, 0.5 since for every y there are 2 x
@@ -111,7 +105,7 @@ struct Line{
 
 		double dx = p1.x - p0.x;
 		double dy = p1.y - p0.y;
-		if(std::abs(dx) > std::abs(dy)){
+		if(std::abs(dx) >= std::abs(dy)){
 			// Line is more horizontal than vertical
 			// if P0 > P1 swap them
 			if (p0.x > p1.x){
@@ -123,17 +117,41 @@ struct Line{
 			double y = p0.y;
 			double slope = dy/dx;
 
+			double next_y;
+
 			Point curr_p;
-			Point next_p;
 
 			for(double x = p0.x; x <= p1.x; x += deltaX){
 				curr_p = Point(x,y);
-				y = y + slope * deltaX;
-				next_p = Point(x + deltaX,y);
-
-				canvas.drawP(curr_p,getSlopeChar(curr_p,next_p));
+				next_y = y + slope * deltaX;
+				// working, breaks with certain numbers ending in 0.5 because of ruonding errors
+				/*
+																 ▄███
+													  ▄████▀
+											  ▄███▀
+									 ▄████▀
+							▄████▀
+						██▀
+				
+			broken example:
+                               ▄███
+                          ▄████▀
+                       ███▀
+                 ▄███▄█
+            ▄████▀
+          ██▀				
+			*/
+				if(int(round(next_y)) == int(round(y))){
+					canvas.drawP(curr_p,char(219)); //█
+				} else if(round(next_y) > round(y)){
+					canvas.drawP(curr_p,char(223)); //▀
+					canvas.drawP(Point(x,next_y), char(220)); //▄
+				} else {
+					canvas.drawP(curr_p,char(220)); //▄
+					canvas.drawP(Point(x,next_y), char(223)); //▀
+				}
+				y = next_y;
 			}
-			std::cout << std::endl;
 		} else {
 			// Line is more vertical than horizontal
 			// if P0 > P1 swap them
@@ -145,27 +163,11 @@ struct Line{
 
 			double x = p0.x;
 			double slope = (dx/dy);
-
-			
-			std::cout << slope << std::endl;
-			Point new_p;
-
-			int change_x;
-			char new_char;
+			Point curr_p;
 			for(double y = p0.y; y <= p1.y; y+= 1){
-				if(x != p0.x){
-					change_x = int(x) - int(new_p.x);
-					if(slope == 0){new_char = SYMBOLS[3];}
-					else if(slope < 0){new_char = SYMBOLS[1];}
-					else {new_char = SYMBOLS[2];}
-				}
-				new_p.x = x;
-				new_p.y = y;				
-				std::cout << new_p << " ";
-				canvas.drawP(new_p, new_char);
-				x = slope + x;
+				curr_p = Point(x,y);
+				canvas.drawP(curr_p,char(219)); //█
 			}
-			std::cout << std::endl;
 		}
 	}
 };
@@ -220,14 +222,16 @@ int main(){
 	std::cout << triangle << std::endl;
 
 	// Make canvas with size 20 and corner and -10, 10
-	Canvas c = Canvas(20, 20, Point(-10, 10));
+	Canvas c = Canvas(50, 50, Point(-25, 25));
+
+
 
 	// make triangle lines and add them to canvas
 	for(int i = 0; i < 3; i++){
 		Point P1 = triangle.vertices[i];
 		Point P2 = triangle.vertices[i == 2 ? 0 : i+1];
 
-		std::cout << P1 << P2 << std::endl;
+		//std::cout << P1 << P2 << std::endl;
 		Line l = Line(P1,P2);
 		l.draw(c);
 	}
@@ -238,6 +242,9 @@ int main(){
 */
 	//c.drawP(P0,'$');
 	//c.drawP(P1,'$');
+
+	//Line l = Line(Point(-7, -6), Point(-6, 6));
+	//l.draw(c);
 
 	// print canvas
 	c.print();
