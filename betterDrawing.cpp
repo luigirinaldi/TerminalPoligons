@@ -51,6 +51,11 @@ struct CanvasPoint{
 		symbol = s;
 		colour = c;
 	}
+
+	bool operator==(const CanvasPoint& cp) const 
+	{
+		return (cp.symbol == symbol && cp.colour[0] == colour[0] && cp.colour[1] == colour[1] && cp.colour[2] == colour[2]);
+	}
 };
 
 struct Canvas{
@@ -78,7 +83,13 @@ struct Canvas{
 			tmp_arr = std::vector<CanvasPoint>();
 		}
 
-		printf("\033[?25l"); //hide cursor
+		
+	}
+
+	//Draw first bit of canvas on the screen
+	void start(){
+		//hide cursor
+		printf("\033[?25l"); 
 		
 		//clear the screen;
 		printf("\033[2J");
@@ -131,15 +142,33 @@ struct Canvas{
 				if(canvas[y][x].symbol != 0){
 					// ESC[y;xH moves curser to row y, col x, where ESC is \033
 					printf("\033[%i;%iH",y,x);
-					// set color mode
-					//printf("\033[38;5;%im",x + y);
-					printf("\033[38;2;%i;%i;%im",int(canvas[y][x].colour[0]), int(canvas[y][x].colour[1]), int(canvas[y][x].colour[2]));
+					// set color
+					printf("\033[38;2;%i;%i;%im",canvas[y][x].colour[0], canvas[y][x].colour[1], canvas[y][x].colour[2]);
 					putchar(canvas[y][x].symbol);
 				}
 			}
-		}
+		}		
+	}
 
-		
+	//Given an input canvas, update only the points that are different
+	void update(Canvas in){
+		for(int y = 0; y <= in.height; y++){
+			for(int x = 0; x <= in.width; x++){
+				if(!(in.canvas[y][x] == canvas[y][x])){
+					// ESC[y;xH moves curser to row y, col x, where ESC is \033
+					printf("\033[%i;%iH",y,x);
+					if(in.canvas[y][x].symbol == 0){
+						putchar(' ');
+					} else {
+						// set color
+						printf("\033[38;2;%i;%i;%im",in.canvas[y][x].colour[0], in.canvas[y][x].colour[1], in.canvas[y][x].colour[2]);
+						putchar(in.canvas[y][x].symbol);
+					}
+					// Set the current point to the new values
+					canvas[y][x] = in.canvas[y][x];
+				}
+			}
+		}
 	}
 
 	void close(){
@@ -311,20 +340,36 @@ int main(){
 	std::cout << triangle << std::endl;
 
 	// Make canvas with size 20 and corner and -10, 10
-	Canvas c = Canvas(50, 50, Point(-25, 25));
+	Canvas c = Canvas(50, 50, Point(0, 0));
+	c.start();
+
+	Canvas buff = Canvas(50, 50, Point(0, 0));
 
 
+	const int DELAY = 10;
 
-	const int DELAY = 200;
+/*
+	c.drawP(Point(0,0),CanvasPoint('@',std::array<uint8_t, 3> {69,69,69}));
 
-	for(int i = 0; i < 100; i++){		
-		c.clear();
-		t_colour[1] += 20;
-		triangle.draw(c, t_colour);
-		c.print();
+	Line l = Line(Point(-10,3),Point(10,-6));
+	l.draw(c, t_colour);
+	c.print();
+	*/
+
+	for(int i = 0; i < 40; i++){		
+		t_colour[2] += 5;
+		t_colour[0] -= 5;
+		for(int i = 0; i < 3; i++){
+			triangle.vertices[i].y -= 1;
+			triangle.vertices[i].x += 1;
+		}
+		triangle.draw(buff, t_colour);
+		c.update(buff);
 		std::this_thread::sleep_for(std::chrono::milliseconds(DELAY));
+		buff = Canvas(50, 50, Point(0, 0));
 		
 	}
+
 
 	c.close();
 }
